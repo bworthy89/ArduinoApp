@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- DashboardPage.xaml - Main dashboard showing connection status and project overview -->
+<Page
+    x:Class="ArduinoConfigApp.Views.DashboardPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="using:ArduinoConfigApp.ViewModels"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+    <Grid Padding="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,24">
+            <TextBlock Text="Dashboard" Style="{StaticResource TitleTextBlockStyle}"/>
+            <TextBlock Text="Connect your Arduino and monitor your project"
+                       Style="{StaticResource SubtitleTextBlockStyle}"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+        </StackPanel>
+
+        <!-- Content -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Connection Panel -->
+            <Border Grid.Column="0"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="20"
+                    Margin="0,0,12,0">
+                <StackPanel>
+                    <TextBlock Text="Arduino Connection"
+                               Style="{StaticResource SubtitleTextBlockStyle}"
+                               Margin="0,0,0,16"/>
+
+                    <!-- Port Selection -->
+                    <TextBlock Text="COM Port" Margin="0,0,0,8"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <ComboBox x:Name="PortComboBox"
+                                  Grid.Column="0"
+                                  HorizontalAlignment="Stretch"
+                                  PlaceholderText="Select a port..."
+                                  ItemsSource="{x:Bind ViewModel.AvailablePorts, Mode=OneWay}"
+                                  DisplayMemberPath="PortName"/>
+                        <Button Grid.Column="1"
+                                Content="Scan"
+                                Margin="8,0,0,0"
+                                Command="{x:Bind ViewModel.ScanPortsCommand}"/>
+                    </Grid>
+
+                    <!-- Board Type Selection -->
+                    <TextBlock Text="Board Type" Margin="0,16,0,8"/>
+                    <StackPanel Orientation="Horizontal">
+                        <RadioButton Content="Pro Micro"
+                                     GroupName="BoardType"
+                                     IsChecked="{x:Bind ViewModel.SelectedBoardType, Mode=TwoWay, Converter={StaticResource BoardTypeConverter}, ConverterParameter=ProMicro}"/>
+                        <RadioButton Content="Mega 2560"
+                                     GroupName="BoardType"
+                                     Margin="16,0,0,0"
+                                     IsChecked="{x:Bind ViewModel.SelectedBoardType, Mode=TwoWay, Converter={StaticResource BoardTypeConverter}, ConverterParameter=Mega2560}"/>
+                    </StackPanel>
+
+                    <!-- Connection Status -->
+                    <Border Margin="0,24,0,0"
+                            Padding="16"
+                            CornerRadius="4"
+                            Background="{ThemeResource SubtleFillColorSecondaryBrush}">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <Ellipse Width="12" Height="12"
+                                         Fill="{x:Bind ViewModel.ConnectionState, Mode=OneWay, Converter={StaticResource ConnectionStateToColorConverter}}"/>
+                                <TextBlock Text="{x:Bind ViewModel.ConnectionState, Mode=OneWay}"
+                                           Margin="8,0,0,0"
+                                           FontWeight="SemiBold"/>
+                            </StackPanel>
+                            <TextBlock Text="{x:Bind ViewModel.FirmwareVersion, Mode=OneWay, TargetNullValue='Firmware: Not connected'}"
+                                       Margin="20,4,0,0"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Connect Button -->
+                    <Button Content="{x:Bind ViewModel.ConnectionState, Mode=OneWay, Converter={StaticResource ConnectionButtonTextConverter}}"
+                            HorizontalAlignment="Stretch"
+                            Margin="0,16,0,0"
+                            Style="{StaticResource AccentButtonStyle}"
+                            Command="{x:Bind ViewModel.ConnectCommand}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Project Stats Panel -->
+            <Border Grid.Column="1"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="20"
+                    Margin="12,0,0,0">
+                <StackPanel>
+                    <TextBlock Text="Project Overview"
+                               Style="{StaticResource SubtitleTextBlockStyle}"
+                               Margin="0,0,0,16"/>
+
+                    <!-- Stats Cards -->
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Input Count -->
+                        <Border Grid.Row="0" Grid.Column="0"
+                                Background="{ThemeResource SubtleFillColorSecondaryBrush}"
+                                CornerRadius="4" Padding="16" Margin="0,0,8,8">
+                            <StackPanel>
+                                <TextBlock Text="{x:Bind ViewModel.InputCount, Mode=OneWay}"
+                                           Style="{StaticResource HeaderTextBlockStyle}"
+                                           Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                                <TextBlock Text="Inputs"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Display Count -->
+                        <Border Grid.Row="0" Grid.Column="1"
+                                Background="{ThemeResource SubtleFillColorSecondaryBrush}"
+                                CornerRadius="4" Padding="16" Margin="8,0,0,8">
+                            <StackPanel>
+                                <TextBlock Text="{x:Bind ViewModel.DisplayCount, Mode=OneWay}"
+                                           Style="{StaticResource HeaderTextBlockStyle}"
+                                           Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                                <TextBlock Text="Displays"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Mapping Count -->
+                        <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                                Background="{ThemeResource SubtleFillColorSecondaryBrush}"
+                                CornerRadius="4" Padding="16" Margin="0,8,0,0">
+                            <StackPanel>
+                                <TextBlock Text="{x:Bind ViewModel.MappingCount, Mode=OneWay}"
+                                           Style="{StaticResource HeaderTextBlockStyle}"
+                                           Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                                <TextBlock Text="Keyboard Mappings"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+
+                    <!-- Quick Actions -->
+                    <TextBlock Text="Quick Actions" Margin="0,24,0,12" FontWeight="SemiBold"/>
+                    <StackPanel Spacing="8">
+                        <Button Content="Add Input" HorizontalAlignment="Stretch">
+                            <Button.KeyboardAccelerators>
+                                <KeyboardAccelerator Key="I" Modifiers="Control"/>
+                            </Button.KeyboardAccelerators>
+                        </Button>
+                        <Button Content="Add Display" HorizontalAlignment="Stretch">
+                            <Button.KeyboardAccelerators>
+                                <KeyboardAccelerator Key="D" Modifiers="Control"/>
+                            </Button.KeyboardAccelerators>
+                        </Button>
+                        <Button Content="Generate Code" HorizontalAlignment="Stretch" Style="{StaticResource AccentButtonStyle}">
+                            <Button.KeyboardAccelerators>
+                                <KeyboardAccelerator Key="G" Modifiers="Control"/>
+                            </Button.KeyboardAccelerators>
+                        </Button>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</Page>
