@@ -38,6 +38,58 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private bool _isDarkTheme;
 
+    /// <summary>
+    /// The current project configuration (exposed from configuration service)
+    /// </summary>
+    public ProjectConfiguration? CurrentConfiguration => _configService.CurrentConfiguration;
+
+    /// <summary>
+    /// Display text for the current board type
+    /// </summary>
+    public string BoardDisplayText => CurrentConfiguration?.TargetBoard.ToString() ?? "Not Set";
+
+    /// <summary>
+    /// Whether to show the unsaved changes indicator (for x:Bind without converters)
+    /// </summary>
+    public Microsoft.UI.Xaml.Visibility UnsavedChangesVisibility =>
+        HasUnsavedChanges ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
+
+    /// <summary>
+    /// Background color for connection status based on state
+    /// </summary>
+    public Microsoft.UI.Xaml.Media.SolidColorBrush ConnectionBackgroundBrush
+    {
+        get
+        {
+            var color = ConnectionState switch
+            {
+                ConnectionState.Connected => Windows.UI.Color.FromArgb(40, 0, 200, 0),
+                ConnectionState.Connecting => Windows.UI.Color.FromArgb(40, 255, 200, 0),
+                ConnectionState.Error => Windows.UI.Color.FromArgb(40, 255, 100, 0),
+                _ => Windows.UI.Color.FromArgb(40, 128, 128, 128)
+            };
+            return new Microsoft.UI.Xaml.Media.SolidColorBrush(color);
+        }
+    }
+
+    /// <summary>
+    /// Indicator color for connection status
+    /// </summary>
+    public Microsoft.UI.Xaml.Media.SolidColorBrush ConnectionIndicatorBrush
+    {
+        get
+        {
+            var color = ConnectionState switch
+            {
+                ConnectionState.Connected => Microsoft.UI.Colors.LimeGreen,
+                ConnectionState.Connecting => Microsoft.UI.Colors.Gold,
+                ConnectionState.Error => Microsoft.UI.Colors.OrangeRed,
+                _ => Microsoft.UI.Colors.Gray
+            };
+            return new Microsoft.UI.Xaml.Media.SolidColorBrush(color);
+        }
+    }
+
     public MainViewModel(
         ISerialService serialService,
         IConfigurationService configService,
@@ -152,6 +204,10 @@ public partial class MainViewModel : ObservableObject
         ConnectionState = e.NewState;
         ConnectedPort = e.PortName;
 
+        // Notify brush properties that depend on ConnectionState
+        OnPropertyChanged(nameof(ConnectionBackgroundBrush));
+        OnPropertyChanged(nameof(ConnectionIndicatorBrush));
+
         StatusMessage = e.NewState switch
         {
             ConnectionState.Connected => $"Connected to {e.PortName}",
@@ -170,5 +226,10 @@ public partial class MainViewModel : ObservableObject
         {
             ProjectName = _configService.CurrentConfiguration.Name;
         }
+
+        // Notify that CurrentConfiguration may have changed
+        OnPropertyChanged(nameof(CurrentConfiguration));
+        OnPropertyChanged(nameof(BoardDisplayText));
+        OnPropertyChanged(nameof(UnsavedChangesVisibility));
     }
 }

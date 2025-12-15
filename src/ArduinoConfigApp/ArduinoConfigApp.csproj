@@ -18,6 +18,8 @@
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
+  <!-- Asset files (not required for non-packaged WinUI apps) -->
+  <!--
   <ItemGroup>
     <Content Include="Assets\SplashScreen.scale-200.png" />
     <Content Include="Assets\LockScreenLogo.scale-200.png" />
@@ -27,6 +29,7 @@
     <Content Include="Assets\StoreLogo.png" />
     <Content Include="Assets\Wide310x150Logo.scale-200.png" />
   </ItemGroup>
+  -->
 
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.3.2" />

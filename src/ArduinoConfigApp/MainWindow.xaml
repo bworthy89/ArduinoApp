@@ -80,19 +80,19 @@
                         <TextBlock Text="*"
                                    Style="{StaticResource SubtitleTextBlockStyle}"
                                    Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
-                                   Visibility="{x:Bind ViewModel.HasUnsavedChanges, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
+                                   Visibility="{x:Bind ViewModel.UnsavedChangesVisibility, Mode=OneWay}"
                                    VerticalAlignment="Center"/>
                     </StackPanel>
 
                     <!-- Connection Status and Actions -->
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
                         <!-- Connection Indicator -->
-                        <Border Background="{x:Bind ViewModel.ConnectionState, Mode=OneWay, Converter={StaticResource ConnectionStateToBrushConverter}}"
+                        <Border Background="{x:Bind ViewModel.ConnectionBackgroundBrush, Mode=OneWay}"
                                 CornerRadius="10"
                                 Padding="12,6">
                             <StackPanel Orientation="Horizontal">
                                 <Ellipse Width="8" Height="8"
-                                         Fill="{x:Bind ViewModel.ConnectionState, Mode=OneWay, Converter={StaticResource ConnectionStateToColorConverter}}"/>
+                                         Fill="{x:Bind ViewModel.ConnectionIndicatorBrush, Mode=OneWay}"/>
                                 <TextBlock Text="{x:Bind ViewModel.ConnectedPort, Mode=OneWay, TargetNullValue='Not Connected'}"
                                            Margin="8,0,0,0"
                                            FontSize="12"/>
@@ -131,8 +131,8 @@
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="16">
                     <TextBlock VerticalAlignment="Center" FontSize="12">
-                        <Run Text="Board: "/>
-                        <Run Text="{x:Bind ViewModel.CurrentConfiguration.TargetBoard, Mode=OneWay, FallbackValue='Not Set'}"/>
+                        
+                        <Run Text="Board: "/><Run Text="{x:Bind ViewModel.BoardDisplayText, Mode=OneWay}"/>
                     </TextBlock>
                 </StackPanel>
             </Grid>

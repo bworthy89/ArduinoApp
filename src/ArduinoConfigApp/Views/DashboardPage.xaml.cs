@@ -12,8 +12,8 @@ public sealed partial class DashboardPage : Page
 
     public DashboardPage()
     {
-        // In production, this would be injected via DI
-        // ViewModel = App.GetService<DashboardViewModel>();
+        // Get ViewModel from DI
+        ViewModel = App.GetService<DashboardViewModel>();
 
         this.InitializeComponent();
     }

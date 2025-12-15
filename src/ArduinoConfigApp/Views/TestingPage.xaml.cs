@@ -12,8 +12,8 @@ public sealed partial class TestingPage : Page
 
     public TestingPage()
     {
-        // In production, this would be injected via DI
-        // ViewModel = App.GetService<InputTestingViewModel>();
+        // Get ViewModel from DI
+        ViewModel = App.GetService<InputTestingViewModel>();
 
         this.InitializeComponent();
     }

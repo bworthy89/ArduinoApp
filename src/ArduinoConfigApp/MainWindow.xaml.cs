@@ -16,8 +16,8 @@ public sealed partial class MainWindow : Window
     {
         this.InitializeComponent();
 
-        // In production, this would be injected via DI
-        // ViewModel = App.GetService<MainViewModel>();
+        // Get ViewModel from DI
+        ViewModel = App.GetService<MainViewModel>();
 
         // Set window size
         var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
