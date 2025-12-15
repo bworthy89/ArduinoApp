@@ -119,28 +119,54 @@ public class InputTestingService : IInputTestingService
         {
             try
             {
+                // Check cancellation before sending command
+                if (cancellationToken.IsCancellationRequested)
+                    break;
+
                 var response = await _serialService.SendCommandAsync(new SerialCommand
                 {
                     CommandType = SerialProtocol.Commands.GetState,
                     TimeoutMs = PollingIntervalMs * 2
                 }, cancellationToken);
 
+                // Check cancellation after command completes
+                if (cancellationToken.IsCancellationRequested)
+                    break;
+
                 if (response.Success && !string.IsNullOrEmpty(response.Data))
                 {
                     ProcessStateResponse(response.Data);
                 }
 
-                await Task.Delay(PollingIntervalMs, cancellationToken);
+                // Delay with cancellation support
+                try
+                {
+                    await Task.Delay(PollingIntervalMs, cancellationToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    // Expected during shutdown - exit gracefully
+                    break;
+                }
             }
-            catch (OperationCanceledException)
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                break;
-            }
-            catch (Exception ex)
-            {
-                // Log error but continue polling
-                System.Diagnostics.Debug.WriteLine($"Polling error: {ex.Message}");
-                await Task.Delay(PollingIntervalMs, cancellationToken);
+                if (!cancellationToken.IsCancellationRequested)
+                {
+                    // Log error but continue polling
+                    System.Diagnostics.Debug.WriteLine($"Polling error: {ex.Message}");
+
+                    // Delay before retry
+                    try
+                    {
+                        await Task.Delay(PollingIntervalMs, cancellationToken);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // Expected during shutdown - exit gracefully
+                        break;
+                    }
+                }
             }
         }
     }

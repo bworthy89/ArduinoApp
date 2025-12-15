@@ -182,12 +182,27 @@ public class SerialService : ISerialService
         {
             try
             {
+                // Check cancellation before blocking operations
+                if (cancellationToken.IsCancellationRequested)
+                    break;
+
                 if (_serialPort.BytesToRead > 0)
                 {
-                    var bytesRead = await _serialPort.BaseStream.ReadAsync(
-                        buffer, 0, buffer.Length, cancellationToken);
+                    // Use Task.Run to avoid blocking and check cancellation
+                    var readTask = _serialPort.BaseStream.ReadAsync(buffer, 0, buffer.Length, cancellationToken);
 
-                    if (bytesRead > 0)
+                    int bytesRead;
+                    try
+                    {
+                        bytesRead = await readTask;
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // Expected during shutdown - exit gracefully
+                        break;
+                    }
+
+                    if (bytesRead > 0 && !cancellationToken.IsCancellationRequested)
                     {
                         var data = Encoding.UTF8.GetString(buffer, 0, bytesRead);
                         ProcessReceivedData(data, buffer[..bytesRead]);
@@ -195,14 +210,19 @@ public class SerialService : ISerialService
                 }
                 else
                 {
-                    await Task.Delay(10, cancellationToken);
+                    // Use short delay with cancellation token
+                    try
+                    {
+                        await Task.Delay(10, cancellationToken);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // Expected during shutdown - exit gracefully
+                        break;
+                    }
                 }
             }
-            catch (OperationCanceledException)
-            {
-                break;
-            }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 if (!cancellationToken.IsCancellationRequested)
                 {
@@ -251,9 +271,29 @@ public class SerialService : ISerialService
             return new SerialResponse { Success = false, ErrorMessage = "Not connected" };
         }
 
-        await _sendLock.WaitAsync(cancellationToken);
+        // Check cancellation before acquiring lock
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return new SerialResponse { Success = false, ErrorMessage = "Operation cancelled" };
+        }
+
         try
         {
+            await _sendLock.WaitAsync(cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            return new SerialResponse { Success = false, ErrorMessage = "Operation cancelled" };
+        }
+
+        try
+        {
+            // Check cancellation after acquiring lock
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return new SerialResponse { Success = false, ErrorMessage = "Operation cancelled" };
+            }
+
             // Serialize command to JSON
             var json = JsonSerializer.Serialize(new
             {
@@ -278,14 +318,34 @@ public class SerialService : ISerialService
             {
                 // Send command
                 var bytes = Encoding.UTF8.GetBytes(json + "\n");
-                await _serialPort.BaseStream.WriteAsync(bytes, cancellationToken);
+                try
+                {
+                    await _serialPort.BaseStream.WriteAsync(bytes, cancellationToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    return new SerialResponse { Success = false, ErrorMessage = "Operation cancelled" };
+                }
 
-                // Wait for response with timeout
-                using var timeoutCts = new CancellationTokenSource(command.TimeoutMs);
-                using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
-                    cancellationToken, timeoutCts.Token);
+                // Wait for response with timeout using Task.WhenAny to avoid exception-based timeout
+                var delayTask = Task.Delay(command.TimeoutMs, cancellationToken);
+                var completedTask = await Task.WhenAny(responseReceived.Task, delayTask);
 
-                var responseJson = await responseReceived.Task.WaitAsync(linkedCts.Token);
+                // Check if user cancelled
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return new SerialResponse { Success = false, ErrorMessage = "Operation cancelled" };
+                }
+
+                // Check if we got a response or timed out
+                if (completedTask == delayTask)
+                {
+                    // Timeout occurred - no exception thrown
+                    return new SerialResponse { Success = false, ErrorMessage = "Command timeout" };
+                }
+
+                // Got response
+                var responseJson = await responseReceived.Task;
 
                 // Parse response
                 var response = JsonSerializer.Deserialize<JsonElement>(responseJson);
@@ -301,11 +361,7 @@ public class SerialService : ISerialService
                 DataReceived -= OnDataReceived;
             }
         }
-        catch (OperationCanceledException)
-        {
-            return new SerialResponse { Success = false, ErrorMessage = "Command timeout" };
-        }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             return new SerialResponse { Success = false, ErrorMessage = ex.Message };
         }
