@@ -18,19 +18,21 @@ A Windows desktop application for configuring and testing Arduino Pro Micro and 
 # Restore dependencies
 dotnet restore ArduinoConfigApp.sln
 
-# Build the solution
-dotnet build ArduinoConfigApp.sln
+# Build the solution (requires platform specification for WinUI)
+dotnet build ArduinoConfigApp.sln -p:Platform=x64
 
 # Build release
-dotnet build ArduinoConfigApp.sln -c Release
+dotnet build ArduinoConfigApp.sln -c Release -p:Platform=x64
 
 # Run the application
-dotnet run --project src/ArduinoConfigApp/ArduinoConfigApp.csproj
+dotnet run --project src/ArduinoConfigApp/ArduinoConfigApp.csproj -p:Platform=x64
 
 # Run tests
 dotnet test tests/ArduinoConfigApp.Core.Tests/ArduinoConfigApp.Core.Tests.csproj
 dotnet test tests/ArduinoConfigApp.Services.Tests/ArduinoConfigApp.Services.Tests.csproj
 ```
+
+**Note:** The `-p:Platform=x64` flag is required for WinUI apps with `WindowsAppSDKSelfContained`.
 
 ## Project Structure
 
@@ -112,7 +114,8 @@ JSON-based command/response protocol between desktop and Arduino:
 | Wiring diagrams | `src/ArduinoConfigApp.Services/WiringDiagram/WiringDiagramGenerator.cs` |
 | Input testing | `src/ArduinoConfigApp.Services/InputTesting/InputTestingService.cs` |
 | Domain models | `src/ArduinoConfigApp.Core/Models/` |
-| Arduino firmware | `src/ArduinoConfigApp.Arduino/ProMicro/ArduinoConfigFirmware/` |
+| Pro Micro firmware | `src/ArduinoConfigApp.Arduino/ProMicro/ArduinoConfigFirmware/` |
+| Mega 2560 firmware | `src/ArduinoConfigApp.Arduino/Mega2560/ArduinoConfigFirmware/` |
 
 ## Domain Models
 
@@ -190,9 +193,52 @@ Encoder               - Rotary encoder handling
 Keyboard              - HID keyboard (Pro Micro only)
 ```
 
+## Recent Improvements
+
+### Serial Communication Refactoring (Dec 2024)
+Refactored serial communication to minimize `TaskCanceledException` during normal operation:
+
+**Changes:**
+- **SerialService.ReadLoopAsync**: Added explicit cancellation checks before blocking operations, isolated `OperationCanceledException` handling to specific async calls
+- **SerialService.SendCommandAsync**: Replaced timeout-based cancellation tokens with `Task.WhenAny` pattern to avoid throwing exceptions on timeout
+- **InputTestingService.PollInputStatesAsync**: Added explicit cancellation checks and exception filtering
+
+**Benefits:**
+- Cleaner debug output (fewer first-chance exceptions)
+- More predictable control flow
+- Better separation of expected shutdown behavior vs error conditions
+
+**Files Modified:**
+- `src/ArduinoConfigApp.Services/Serial/SerialService.cs` (lines 177-372)
+- `src/ArduinoConfigApp.Services/InputTesting/InputTestingService.cs` (lines 116-172)
+
+### Mega 2560 Firmware Support (Dec 2024)
+Added complete firmware template for Arduino Mega 2560:
+
+**Location:** `src/ArduinoConfigApp.Arduino/Mega2560/ArduinoConfigFirmware/`
+
+**Key Differences from Pro Micro:**
+- No `Keyboard.h` include (Mega 2560 lacks native USB HID)
+- No `Keyboard.begin()` in setup
+- Increased `MAX_INPUTS` to 32 (Mega has more pins than Pro Micro)
+- Keyboard output must be handled by desktop app via serial protocol
+
+**Code Generator Support:**
+The `ArduinoCodeGenerator` already handles board-specific code generation (`ArduinoCodeGenerator.cs:84-87, 213-218, 433-440`), so users can generate firmware for either board type.
+
+### System.IO.Ports Fix (Dec 2024)
+Fixed `FileNotFoundException` when connecting to Arduino in WinUI apps:
+
+**Issue:** WinUI apps with `WindowsAppSDKSelfContained` sometimes fail to copy transitive dependency runtime assets from referenced projects.
+
+**Solution:** Added explicit `System.IO.Ports` package reference to the main app project (`src/ArduinoConfigApp/ArduinoConfigApp.csproj`), ensuring all native and managed runtime libraries are included in build output.
+
+**Files Modified:**
+- `src/ArduinoConfigApp/ArduinoConfigApp.csproj` (line 40)
+
 ## Known Limitations
 
 - MAX7219 SPI is controlled by Arduino, not directly by desktop app
-- Mega 2560 cannot act as USB HID keyboard (no native USB)
+- Mega 2560 cannot act as USB HID keyboard (no native USB - use Pro Micro for HID)
 - Wiring diagram export currently supports SVG only (PNG requires SkiaSharp)
 - Arduino CLI integration for compilation validation not yet implemented
