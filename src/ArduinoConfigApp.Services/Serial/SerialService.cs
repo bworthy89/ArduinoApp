@@ -20,7 +20,7 @@ public class SerialService : ISerialService
     private readonly StringBuilder _receiveBuffer = new();
 
     public event EventHandler<ConnectionStateChangedEventArgs>? ConnectionStateChanged;
-    public event EventHandler<SerialDataReceivedEventArgs>? DataReceived;
+    public event EventHandler<ArduinoDataReceivedEventArgs>? DataReceived;
     public event EventHandler<SerialErrorEventArgs>? ErrorOccurred;
 
     public ConnectionState ConnectionState { get; private set; } = ConnectionState.Disconnected;
@@ -228,7 +228,7 @@ public class SerialService : ISerialService
             var line = lines[i].Trim();
             if (!string.IsNullOrEmpty(line))
             {
-                DataReceived?.Invoke(this, new SerialDataReceivedEventArgs
+                DataReceived?.Invoke(this, new ArduinoDataReceivedEventArgs
                 {
                     Data = line,
                     RawData = Encoding.UTF8.GetBytes(line)
@@ -264,7 +264,7 @@ public class SerialService : ISerialService
             // Create response completion source
             var responseReceived = new TaskCompletionSource<string>();
 
-            void OnDataReceived(object? sender, SerialDataReceivedEventArgs e)
+            void OnDataReceived(object? sender, ArduinoDataReceivedEventArgs e)
             {
                 if (e.Data.StartsWith("{") && e.Data.Contains("\"response\""))
                 {

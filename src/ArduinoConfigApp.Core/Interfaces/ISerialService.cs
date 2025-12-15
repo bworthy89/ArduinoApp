@@ -16,7 +16,7 @@ public interface ISerialService : IAsyncDisposable
     /// <summary>
     /// Event raised when data is received from the Arduino
     /// </summary>
-    event EventHandler<SerialDataReceivedEventArgs>? DataReceived;
+    event EventHandler<ArduinoDataReceivedEventArgs>? DataReceived;
 
     /// <summary>
     /// Event raised when an error occurs
@@ -87,7 +87,7 @@ public class ConnectionStateChangedEventArgs : EventArgs
 /// <summary>
 /// Event args for received serial data
 /// </summary>
-public class SerialDataReceivedEventArgs : EventArgs
+public class ArduinoDataReceivedEventArgs : EventArgs
 {
     public string Data { get; init; } = string.Empty;
     public byte[]? RawData { get; init; }

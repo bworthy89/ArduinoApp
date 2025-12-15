@@ -210,7 +210,7 @@ public class InputTestingService : IInputTestingService
     /// <summary>
     /// Handles event-driven data from Arduino (input triggers)
     /// </summary>
-    private void OnSerialDataReceived(object? sender, SerialDataReceivedEventArgs e)
+    private void OnSerialDataReceived(object? sender, ArduinoDataReceivedEventArgs e)
     {
         if (!IsTestingActive)
             return;

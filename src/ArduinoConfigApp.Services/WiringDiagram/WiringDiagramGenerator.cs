@@ -1,6 +1,7 @@
 using ArduinoConfigApp.Core.Enums;
 using ArduinoConfigApp.Core.Interfaces;
 using ArduinoConfigApp.Core.Models;
+using WiringDiagramModel = ArduinoConfigApp.Core.Models.WiringDiagram;
 
 namespace ArduinoConfigApp.Services.WiringDiagram;
 
@@ -22,9 +23,9 @@ public class WiringDiagramGenerator : IWiringDiagramService
     private const double DisplayWidth = 200;
     private const double DisplayHeight = 60;
 
-    public WiringDiagram GenerateDiagram(ProjectConfiguration configuration)
+    public WiringDiagramModel GenerateDiagram(ProjectConfiguration configuration)
     {
-        var diagram = new WiringDiagram
+        var diagram = new WiringDiagramModel
         {
             Width = CalculateDiagramWidth(configuration),
             Height = CalculateDiagramHeight(configuration)
@@ -190,7 +191,7 @@ public class WiringDiagramGenerator : IWiringDiagramService
         return steps;
     }
 
-    public async Task<byte[]> RenderToImageAsync(WiringDiagram diagram, ImageFormat format, int width = 1200, int height = 800)
+    public async Task<byte[]> RenderToImageAsync(WiringDiagramModel diagram, ImageFormat format, int width = 1200, int height = 800)
     {
         // For PNG rendering, we would use SkiaSharp
         // This is a placeholder - actual implementation would render the SVG to bitmap
@@ -206,7 +207,7 @@ public class WiringDiagramGenerator : IWiringDiagramService
         return await Task.FromResult(System.Text.Encoding.UTF8.GetBytes(svg));
     }
 
-    public string RenderToSvg(WiringDiagram diagram)
+    public string RenderToSvg(WiringDiagramModel diagram)
     {
         var svg = new System.Text.StringBuilder();
 
@@ -423,7 +424,7 @@ public class WiringDiagramGenerator : IWiringDiagramService
         return svg.ToString();
     }
 
-    private string RenderLegend(WiringDiagram diagram)
+    private string RenderLegend(WiringDiagramModel diagram)
     {
         var svg = new System.Text.StringBuilder();
         var legendY = diagram.Height - 80;
@@ -440,7 +441,7 @@ public class WiringDiagramGenerator : IWiringDiagramService
         return svg.ToString();
     }
 
-    public async Task ExportAsync(WiringDiagram diagram, string filePath, ImageFormat format)
+    public async Task ExportAsync(WiringDiagramModel diagram, string filePath, ImageFormat format)
     {
         var data = await RenderToImageAsync(diagram, format, diagram.Width, diagram.Height);
         await File.WriteAllBytesAsync(filePath, data);
@@ -542,7 +543,7 @@ public class WiringDiagramGenerator : IWiringDiagramService
     }
 
     // Helper methods for creating diagram components
-    private DiagramComponent CreateArduinoComponent(BoardType boardType, WiringDiagram diagram)
+    private DiagramComponent CreateArduinoComponent(BoardType boardType, WiringDiagramModel diagram)
     {
         var isProMicro = boardType == BoardType.ProMicro;
         var component = new DiagramComponent
@@ -580,7 +581,7 @@ public class WiringDiagramGenerator : IWiringDiagramService
         return component;
     }
 
-    private DiagramComponent CreatePowerRail(WiringDiagram diagram, bool isVcc)
+    private DiagramComponent CreatePowerRail(WiringDiagramModel diagram, bool isVcc)
     {
         return new DiagramComponent
         {

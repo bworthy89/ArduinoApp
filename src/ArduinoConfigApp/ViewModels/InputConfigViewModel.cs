@@ -50,16 +50,7 @@ public partial class InputConfigViewModel : ObservableObject
 
     public ObservableCollection<int> AvailablePins { get; } = [];
 
-    public DashboardViewModel(IConfigurationService configService, IInputTestingService testingService)
-    {
-        _configService = configService;
-        _testingService = testingService;
 
-        _configService.ConfigurationChanged += OnConfigurationChanged;
-        RefreshInputs();
-    }
-
-    // Constructor overload for design-time
     public InputConfigViewModel(IConfigurationService configService, IInputTestingService testingService)
     {
         _configService = configService;
